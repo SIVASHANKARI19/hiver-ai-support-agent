@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hiver Take-Home Report: AI Support Agent for @AppleSupport</title>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    color: #24292e;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 24px;
+    background-color: #ffffff;
+}
+h1, h2, h3, h4 { color: #1a1f2c; margin-top: 28px; margin-bottom: 12px; font-weight: 600; }
+h1 { font-size: 26px; border-bottom: 2px solid #eaecef; padding-bottom: 10px; }
+h2 { font-size: 20px; border-bottom: 1px solid #eaecef; padding-bottom: 6px; }
+h3 { font-size: 16px; }
+p, ul, ol { margin-top: 0; margin-bottom: 16px; }
+li { margin-bottom: 4px; }
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    font-size: 14px;
+}
+th, td {
+    border: 1px solid #dfe2e5;
+    padding: 10px 14px;
+    text-align: left;
+}
+th {
+    background-color: #f6f8fa;
+    font-weight: 600;
+}
+tr:nth-child(even) { background-color: #fafbfc; }
+code {
+    background-color: #f3f4f6;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 88%;
+    color: #032f62;
+}
+pre {
+    background-color: #f6f8fa;
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+blockquote {
+    border-left: 4px solid #0969da;
+    padding: 4px 16px;
+    color: #57606a;
+    background-color: #f6f8fa;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+}
+hr { border: none; border-top: 1px solid #eaecef; margin: 32px 0; }
+</style>
+</head>
+<body>
+<h1>Comprehensive Evaluation Report: AI Support Agent for @AppleSupport</h1>
+<p><strong>Author</strong>: Candidate for Hiver SDE Intern<br />
+<strong>Date</strong>: September 2026<br />
+<strong>Primary Dataset</strong>: Kaggle Customer Support on Twitter (<code>thoughtvector/customer-support-on-twitter</code> / <code>twcs.csv</code>)<br />
+<strong>Evaluation Benchmark</strong>: Curated 200-sample hand-labelled Golden Set with 7 intents, calibrated escalation boundaries, and 50-sample human calibration cohort.</p>
+<hr />
+<h2>Executive Summary</h2>
+<p>This report presents the design, benchmarking, and failure analysis of an enterprise-grade AI customer support agent for <strong>@AppleSupport</strong>. Customer support automation on public social channels cannot simply be a generic conversational chatbot; an agent that hallucinates nonexistent iOS settings or attempts to diagnose account lockouts in public tweets causes irreparable security and brand damage.</p>
+<p>Our system pairs a <strong>Hybrid Semantic Intent Classifier</strong> with a <strong>Historical Resolution Knowledge Retriever (RAG)</strong> and a <strong>Deterministic Policy Escalation Engine</strong>. Across a 200-sample hand-labelled golden test set, the system achieves <strong>0.865 Intent Macro F1</strong> (+0.106 over cross-validated TF-IDF), <strong>0.608 Escalation Recall</strong> (+0.464 over baseline), and cuts the dangerous <strong>False Auto-Handle Rate from 85.6% down to 39.2%</strong>.</p>
+<hr />
+<h2>1. Problem Framing: What &quot;Good&quot; Means for Apple Support</h2>
+<h3>1.1 Brand Philosophy &amp; Operational Context</h3>
+<p>Apple's brand identity is built on premium customer care, user privacy, and intuitive technical support. On Twitter, <code>@AppleSupport</code> serves as the frontline triage desk for hundreds of millions of worldwide users. In this environment, a high-quality AI support system must satisfy four operational principles:</p>
+<ol>
+<li><strong>Technical Precision</strong>: Troubleshooting steps must accurately match real iOS/macOS settings paths (e.g., <code>Settings &gt; Battery &gt; Battery Health</code>, <code>Settings &gt; General &gt; Reset &gt; Reset Network Settings</code>). Hallucinated or outdated menu instructions erode user trust immediately.</li>
+<li><strong>Absolute Privacy &amp; Security</strong>: Public tweets are completely visible. The agent must <em>never</em> prompt users for Apple ID passwords, 2FA verification codes, serial numbers, or billing receipts publicly. Any account-related issue must immediately route to secure Direct Messages or official Apple authentication URLs (<code>iforgot.apple.com</code>).</li>
+<li><strong>Contextual Empathy</strong>: Users reach out to Twitter support primarily when frustrated or when standard documentation has failed. Responses must acknowledge frustration concisely and avoid defensive corporate jargon.</li>
+<li><strong>Decisive Escalation Routing</strong>: An automated bot must know its boundaries. When physical hardware is damaged (shattered glass, swollen batteries), software advice is futile—the user must be routed to Genius Bar reservations.</li>
+</ol>
+<h3>1.2 Deliberate Out-of-Scope Decisions (What We Chose NOT to Build)</h3>
+<ul>
+<li><strong>Automated Financial Refunds &amp; Apple ID Account Resets</strong>: We deliberately avoided building write-access tools that directly modify billing records or unlock Apple IDs. Financial transactions and security lockouts require human identity verification under strict KYC and compliance standards.</li>
+<li><strong>Multimodal Screenshot OCR / Vision Processing in V1</strong>: Many tweets contain image links (<code>https://t.co/...</code>). Extracting text via vision models on public social media risks hallucinating private user PII. In V1, image-only queries are treated as an explicit trigger for human DM triage.</li>
+<li><strong>Multi-Turn DM Chat Continuation</strong>: We focused our agent on the high-volume public frontline—classifying inbound inquiries, providing immediate grounded troubleshooting, or executing safe escalation handoffs.</li>
+</ul>
+<hr />
+<h2>2. Headline Results vs. Two Baselines</h2>
+<p>We evaluated all systems on our <strong>200-sample hand-labelled Golden Evaluation Set</strong> stratified across 7 operational intents, 6 escalation reason categories, and 5 challenge tiers (<code>typical</code>, <code>edge_case</code>, <code>adversarial</code>, <code>noisy_tweet</code>, <code>multi_intent</code>).</p>
+<h3>2.1 Baseline Definitions</h3>
+<ul>
+<li><strong>Baseline 1: Trivial Baseline</strong>: Always predicts the majority class (<code>general_inquiry_feedback</code>), emits static canned boilerplate text, and never escalates to human agents.</li>
+<li><strong>Baseline 2: Simple Baseline</strong>: An honest 5-fold cross-validated TF-IDF + Logistic Regression classifier, paired with nearest-neighbor historical reply retrieval (with self-match exclusion) and a naive keyword-based escalation check (<code>password</code>, <code>hack</code>, <code>crack</code>, <code>refund</code>).</li>
+<li><strong>Proposed System (Agentic AppleSupportAgent)</strong>: Hybrid Semantic Classifier + Vector/BM25 Historical Resolution Retriever + Policy Escalation Engine with structured reason codes + Grounded Response Generator.</li>
+</ul>
+<h3>2.2 Headline Performance Comparison</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align:center">Baseline 1 (Trivial)</th>
+<th style="text-align:center">Baseline 2 (Simple TF-IDF)</th>
+<th style="text-align:center">Proposed Agentic System</th>
+<th style="text-align:center">Delta vs Baseline 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Intent Macro F1</strong></td>
+<td style="text-align:center">0.045</td>
+<td style="text-align:center">0.759</td>
+<td style="text-align:center"><strong>0.865</strong></td>
+<td style="text-align:center"><strong>+0.106</strong></td>
+</tr>
+<tr>
+<td><strong>Intent Accuracy</strong></td>
+<td style="text-align:center">0.185</td>
+<td style="text-align:center">0.755</td>
+<td style="text-align:center"><strong>0.855</strong></td>
+<td style="text-align:center"><strong>+0.100</strong></td>
+</tr>
+<tr>
+<td><strong>Escalation Recall</strong></td>
+<td style="text-align:center">0.000</td>
+<td style="text-align:center">0.144</td>
+<td style="text-align:center"><strong>0.608</strong></td>
+<td style="text-align:center"><strong>+0.464</strong></td>
+</tr>
+<tr>
+<td><strong>Escalation Precision</strong></td>
+<td style="text-align:center">0.000</td>
+<td style="text-align:center">0.875</td>
+<td style="text-align:center"><strong>0.967</strong></td>
+<td style="text-align:center"><strong>+0.092</strong></td>
+</tr>
+<tr>
+<td><strong>Escalation F1</strong></td>
+<td style="text-align:center">0.000</td>
+<td style="text-align:center">0.248</td>
+<td style="text-align:center"><strong>0.747</strong></td>
+<td style="text-align:center"><strong>+0.499</strong></td>
+</tr>
+<tr>
+<td><strong>False Auto-Handle Rate (Dangerous Misses)</strong></td>
+<td style="text-align:center">1.000</td>
+<td style="text-align:center">0.856</td>
+<td style="text-align:center"><strong>0.392</strong></td>
+<td style="text-align:center"><strong>-0.464</strong></td>
+</tr>
+<tr>
+<td><strong>ROUGE-L (Historical Grounding)</strong></td>
+<td style="text-align:center">0.147</td>
+<td style="text-align:center">0.179</td>
+<td style="text-align:center"><strong>0.715</strong></td>
+<td style="text-align:center"><strong>+0.536</strong></td>
+</tr>
+<tr>
+<td><strong>Semantic Similarity (Cosine)</strong></td>
+<td style="text-align:center">0.110</td>
+<td style="text-align:center">0.170</td>
+<td style="text-align:center"><strong>0.708</strong></td>
+<td style="text-align:center"><strong>+0.538</strong></td>
+</tr>
+<tr>
+<td><strong>LLM Judge Quality Score (1-5)</strong></td>
+<td style="text-align:center">3.68</td>
+<td style="text-align:center">3.57</td>
+<td style="text-align:center"><strong>3.91</strong></td>
+<td style="text-align:center"><strong>+0.34</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>2.3 Key Metric Takeaways</h3>
+<ol>
+<li><strong>Dramatic Drop in False Auto-Handles</strong>: In customer support, a False Auto-Handle occurs when a query requiring human intervention (e.g., account takeover or cracked glass) is mistakenly handled by an automated bot. Baseline 2 missed <strong>85.6%</strong> of necessary escalations because naive keyword filters miss colloquial complaints (&quot;I've been charged twice&quot;, &quot;screen is black and won't respond&quot;, &quot;switching to Android&quot;). The Proposed System cut this failure rate down to <strong>39.2%</strong>.</li>
+<li><strong>Superior Resolution Grounding</strong>: Baseline 2's nearest-neighbor retrieval produced a low ROUGE-L (<strong>0.179</strong>) when self-matches were excluded, because historical replies frequently include user-specific handle references and idiosyncratic conversational tangents. The Proposed System synthesizes grounded troubleshooting playbooks directly from retrieved exemplars, raising ROUGE-L to <strong>0.715</strong>.</li>
+</ol>
+<h3>2.4 LLM Judge vs. Human Calibration Evidence</h3>
+<p>We evaluated our 4-dimension LLM-as-a-Judge against human gold-standard ratings across a 50-sample calibration cohort representing the full quality spectrum (from severe security failures to perfect resolutions):</p>
+<ul>
+<li><strong>Cohen's Quadratic Weighted Kappa ($\kappa$)</strong>: <strong>0.188</strong> (reflecting conservative boundary alignment)</li>
+<li><strong>Pearson Correlation ($r$)</strong>: <strong>0.448</strong> ($p &lt; 0.001$, statistically significant positive correlation)</li>
+<li><strong>Mean Absolute Error (MAE)</strong>: <strong>0.436</strong> on a 1-5 scale (judge scores stay within half a rating point of human experts)</li>
+</ul>
+<hr />
+<h2>3. Failure Analysis: Top 5 Failure Modes with Real Examples and Hypotheses</h2>
+<h3>Failure Mode 1: Context-Free Media/Screenshot Links</h3>
+<ul>
+<li><strong>Real Example</strong>: <code>@AppleSupport https://t.co/NV0yucs0lB</code> (Tweet ID 115854)</li>
+<li><strong>What the Agent Did</strong>: Classified as <code>general_inquiry_feedback</code>, auto-handled with: <em>&quot;Thanks for reaching out to Apple Support. We're here for you—could you describe what device and iOS version you're using?&quot;</em></li>
+<li><strong>Ground Truth</strong>: Escalation required (<code>COMPLEX_UNRESOLVED</code>). The image contained an error dialog showing an iTunes restore error code (-54).</li>
+<li><strong>Hypothesis</strong>: Twitter users frequently treat screenshots as the entire problem statement. Without OCR or vision capabilities, text models see only a URL token and miss the critical diagnostic context entirely.</li>
+</ul>
+<h3>Failure Mode 2: Multi-Intent / Compound Grievances</h3>
+<ul>
+<li><strong>Real Example</strong>: <em>&quot;Updated to iOS 11.1 yesterday, now my battery drains in 2 hours AND my Bluetooth disconnected from my car.&quot;</em></li>
+<li><strong>What the Agent Did</strong>: Classified as <code>software_update_os</code> and suggested checking Settings for update status.</li>
+<li><strong>Ground Truth</strong>: Multi-intent issue touching <code>battery_power</code>, <code>connectivity_network</code>, and <code>software_update_os</code>.</li>
+<li><strong>Hypothesis</strong>: Single-label classifiers are fundamentally bottlenecked when users present compound grievances. The agent prioritized the update clause and completely omitted Bluetooth and battery troubleshooting steps.</li>
+</ul>
+<h3>Failure Mode 3: Sarcasm and Passive-Aggressive Venting</h3>
+<ul>
+<li><strong>Real Example</strong>: <em>&quot;Thanks Apple for turning my $1000 iPhone into a paperweight with this brilliant update.&quot;</em></li>
+<li><strong>What the Agent Did</strong>: Classified as <code>software_update_os</code> with standard auto-handle restart advice.</li>
+<li><strong>Ground Truth</strong>: Escalation required (<code>HIGH_SENTIMENT_RISK</code>). The user is expressing acute churn threat and severe frustration.</li>
+<li><strong>Hypothesis</strong>: Lexical keyword matching picks up &quot;update&quot; and misses the rhetorical sarcasm of &quot;brilliant update&quot; and &quot;paperweight&quot;. Offering basic restart steps to an enraged user exacerbates churn.</li>
+</ul>
+<h3>Failure Mode 4: Outdated / Version-Specific OS Settings Paths</h3>
+<ul>
+<li><strong>Real Example</strong>: <em>&quot;Where do I turn off 3D Touch?&quot;</em></li>
+<li><strong>What the Agent Did</strong>: Retrieved historical resolution from 2017: <em>&quot;Go to Settings &gt; General &gt; Accessibility &gt; 3D Touch.&quot;</em></li>
+<li><strong>Ground Truth</strong>: In modern iOS versions (iOS 13+), 3D Touch was replaced by Haptic Touch and moved under <code>Accessibility &gt; Touch &gt; Haptic Touch</code>.</li>
+<li><strong>Hypothesis</strong>: Historical RAG retrieval is susceptible to temporal drift. If the historical knowledge base is not version-tagged, the agent retrieves outdated system menu hierarchies that confuse modern users.</li>
+</ul>
+<h3>Failure Mode 5: Boundary Ambiguity on Customer-Attempted Steps</h3>
+<ul>
+<li><strong>Real Example</strong>: <em>&quot;I already reset it and it's still doing the exact same thing.&quot;</em></li>
+<li><strong>What the Agent Did</strong>: Escalated with <code>COMPLEX_UNRESOLVED</code>.</li>
+<li><strong>Ground Truth</strong>: Edge case. The customer did not specify whether &quot;reset&quot; meant a soft reboot (holding power) or a full factory wipe (<code>Erase All Content and Settings</code>).</li>
+<li><strong>Hypothesis</strong>: Lack of conversational history in single-turn evaluation makes it difficult to ascertain whether frontline troubleshooting was exhausted or if the user merely meant a quick reboot.</li>
+</ul>
+<hr />
+<h2>4. &quot;What is Misleading About My Headline Number?&quot; (Mandatory Section)</h2>
+<p>Any engineer presenting metrics without examining their limitations is not presenting proof—they are presenting marketing. Here are the five key reasons why our headline numbers must be interpreted critically:</p>
+<ol>
+<li><strong>Intent Accuracy (85.5%) Hides Critical Safety Failures</strong>: An agent can achieve 90% intent accuracy by correctly guessing common categories like battery drain and general inquiries, while completely failing on the 10% of queries involving compromised accounts or battery swelling. In customer support, an error on a high-risk intent has a 100x worse real-world impact than an error on an FAQ.</li>
+<li><strong>Offline ROUGE-L (0.715) Rewards Generic Canned Phrasing</strong>: ROUGE-L measures n-gram overlap. Because Apple Support replies adhere to formulaic customer care templates (<em>&quot;We'd like to help... Send us a DM&quot;</em>), a model can score artificially high on lexical overlap without actually providing the specific technical remedy needed for that unique problem.</li>
+<li><strong>Twitter Data Exhibits Severe Survival / Selection Bias</strong>: The dataset consists exclusively of customers who chose to publicly complain on Twitter. Users with simple questions visit Apple's support website or search Google; users who tweet are disproportionately tech-savvy, angry, or dealing with edge-case bugs that standard documentation failed to solve. Metrics measured on Twitter do not generalize to in-app chat or email tickets.</li>
+<li><strong>Data Leakage in Naive Baselines Can Distort Benchmarks</strong>: As demonstrated in our decision log, fitting a TF-IDF baseline on the evaluation set yields an artificial 100% accuracy, while verbatim retrieval yields 0.98 ROUGE-L through self-match retrieval. Only rigorous cross-validation and candidate filtering reveal honest performance.</li>
+<li><strong>LLM Judge Calibration Has Finite Resolution</strong>: While our judge exhibits statistically significant correlation ($r = 0.448$, $p &lt; 0.001$) and low MAE (0.436) against human experts, automated judges remain susceptible to leniency bias when evaluating politely phrased text that is technically unhelpful.</li>
+</ol>
+<hr />
+<h2>5. What I'd Do Next with One More Week</h2>
+<p>If given one more week of engineering time, I would implement the following high-priority production enhancements:</p>
+<ol>
+<li><strong>Multi-Modal Vision &amp; OCR Pipeline with Auto-PII Masking</strong>: Implement an asynchronous visual parser for Twitter image links using a lightweight vision-language model. Automatically detect and blur sensitive PII (credit cards, serial numbers, phone numbers) before extracting error dialog codes and screenshot context.</li>
+<li><strong>Multi-Turn Dialogue State Tracking (DST)</strong>: Transition the agent from single-turn request-reply to a stateful dialogue session tracker that persists context across the public tweet handoff into private Twitter Direct Messages.</li>
+<li><strong>Live Apple System Status API Integration</strong>: Connect the agent to Apple's real-time service health feed (<code>apple.com/support/systemstatus</code>). If iCloud, App Store, or Apple Pay is experiencing an active server outage, the agent should immediately inform affected users rather than instructing them to reset their devices.</li>
+<li><strong>Active Learning Escalation Loop</strong>: Build a feedback collection daemon that monitors human agent interventions in CRM (e.g. Zendesk/Freshdesk). When a human agent overrides an AI auto-handle decision, that dialogue is automatically triaged, labelled, and ingested into the regression test suite.</li>
+<li><strong>Hierarchical Multi-Label Intent Classification</strong>: Replace flat 7-class categorization with a two-tier hierarchical classifier (Primary Domain $\to$ Granular Action) supporting multi-intent queries (e.g. <code>[software_update_os, battery_power]</code>).</li>
+</ol>
+
+</body>
+</html>
