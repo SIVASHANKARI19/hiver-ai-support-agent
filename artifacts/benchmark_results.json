@@ -1,0 +1,491 @@
+{
+  "baseline_1_trivial": {
+    "name": "Baseline 1: Trivial (Majority Class + Boilerplate Reply + Never Escalate)",
+    "intent_macro_f1": 0.0446,
+    "intent_accuracy": 0.185,
+    "escalation_precision": 0.0,
+    "escalation_recall": 0.0,
+    "escalation_f1": 0.0,
+    "false_auto_handle_rate": 1.0,
+    "rouge_l": 0.1474,
+    "semantic_similarity": 0.1104,
+    "judge_quality_score": 3.68,
+    "details": {
+      "intent": {
+        "accuracy": 0.185,
+        "macro_precision": 0.0264,
+        "macro_recall": 0.1429,
+        "macro_f1": 0.0446,
+        "micro_f1": 0.185,
+        "per_class": {
+          "battery_power": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 28
+          },
+          "software_update_os": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 35
+          },
+          "connectivity_network": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 25
+          },
+          "hardware_display_audio": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 25
+          },
+          "apple_id_account_security": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 25
+          },
+          "billing_subscriptions_appstore": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 25
+          },
+          "general_inquiry_feedback": {
+            "precision": 0.185,
+            "recall": 1.0,
+            "f1": 0.312,
+            "support": 37
+          }
+        },
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            28
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            35
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            25
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            25
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            25
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            25
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            37
+          ]
+        ],
+        "labels": [
+          "battery_power",
+          "software_update_os",
+          "connectivity_network",
+          "hardware_display_audio",
+          "apple_id_account_security",
+          "billing_subscriptions_appstore",
+          "general_inquiry_feedback"
+        ]
+      },
+      "escalation": {
+        "accuracy": 0.515,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "false_auto_handle_rate": 1.0,
+        "false_escalation_rate": 0.0,
+        "cost_weighted_penalty": 1.455,
+        "reason_accuracy": 0.515,
+        "confusion": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 97,
+          "tn": 103
+        }
+      },
+      "generation": {
+        "mean_rouge_l": 0.1474,
+        "mean_bleu_1": 0.1592,
+        "mean_semantic_similarity": 0.1104,
+        "character_limit_compliance": 1.0
+      }
+    }
+  },
+  "baseline_2_simple": {
+    "name": "Baseline 2: Simple (5-Fold CV TF-IDF + Verbatim Retrieval + Keyword Escalation)",
+    "intent_macro_f1": 0.7587,
+    "intent_accuracy": 0.755,
+    "escalation_precision": 0.875,
+    "escalation_recall": 0.1443,
+    "escalation_f1": 0.2478,
+    "false_auto_handle_rate": 0.8557,
+    "rouge_l": 0.1787,
+    "semantic_similarity": 0.1697,
+    "judge_quality_score": 3.57,
+    "details": {
+      "intent": {
+        "accuracy": 0.755,
+        "macro_precision": 0.7743,
+        "macro_recall": 0.7536,
+        "macro_f1": 0.7587,
+        "micro_f1": 0.755,
+        "per_class": {
+          "battery_power": {
+            "precision": 0.867,
+            "recall": 0.929,
+            "f1": 0.897,
+            "support": 28
+          },
+          "software_update_os": {
+            "precision": 0.611,
+            "recall": 0.629,
+            "f1": 0.62,
+            "support": 35
+          },
+          "connectivity_network": {
+            "precision": 0.737,
+            "recall": 0.56,
+            "f1": 0.636,
+            "support": 25
+          },
+          "hardware_display_audio": {
+            "precision": 0.8,
+            "recall": 0.8,
+            "f1": 0.8,
+            "support": 25
+          },
+          "apple_id_account_security": {
+            "precision": 0.947,
+            "recall": 0.72,
+            "f1": 0.818,
+            "support": 25
+          },
+          "billing_subscriptions_appstore": {
+            "precision": 0.769,
+            "recall": 0.8,
+            "f1": 0.784,
+            "support": 25
+          },
+          "general_inquiry_feedback": {
+            "precision": 0.689,
+            "recall": 0.838,
+            "f1": 0.756,
+            "support": 37
+          }
+        },
+        "confusion_matrix": [
+          [
+            26,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            4,
+            22,
+            1,
+            4,
+            0,
+            1,
+            3
+          ],
+          [
+            0,
+            4,
+            14,
+            1,
+            0,
+            2,
+            4
+          ],
+          [
+            0,
+            1,
+            1,
+            20,
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            1,
+            1,
+            0,
+            18,
+            2,
+            3
+          ],
+          [
+            0,
+            1,
+            1,
+            0,
+            1,
+            20,
+            2
+          ],
+          [
+            0,
+            6,
+            0,
+            0,
+            0,
+            0,
+            31
+          ]
+        ],
+        "labels": [
+          "battery_power",
+          "software_update_os",
+          "connectivity_network",
+          "hardware_display_audio",
+          "apple_id_account_security",
+          "billing_subscriptions_appstore",
+          "general_inquiry_feedback"
+        ]
+      },
+      "escalation": {
+        "accuracy": 0.575,
+        "precision": 0.875,
+        "recall": 0.1443,
+        "f1": 0.2478,
+        "false_auto_handle_rate": 0.8557,
+        "false_escalation_rate": 0.0194,
+        "cost_weighted_penalty": 1.255,
+        "reason_accuracy": 0.535,
+        "confusion": {
+          "tp": 14,
+          "fp": 2,
+          "fn": 83,
+          "tn": 101
+        }
+      },
+      "generation": {
+        "mean_rouge_l": 0.1787,
+        "mean_bleu_1": 0.1768,
+        "mean_semantic_similarity": 0.1697,
+        "character_limit_compliance": 1.0
+      }
+    }
+  },
+  "proposed_system": {
+    "name": "Proposed System (Hybrid Semantic Classifier + Policy Escalation + RAG Grounding)",
+    "intent_macro_f1": 0.8651,
+    "intent_accuracy": 0.855,
+    "escalation_precision": 0.9672,
+    "escalation_recall": 0.6082,
+    "escalation_f1": 0.7468,
+    "false_auto_handle_rate": 0.3918,
+    "rouge_l": 0.715,
+    "semantic_similarity": 0.7077,
+    "judge_quality_score": 3.91,
+    "details": {
+      "intent": {
+        "accuracy": 0.855,
+        "macro_precision": 0.8874,
+        "macro_recall": 0.8624,
+        "macro_f1": 0.8651,
+        "micro_f1": 0.855,
+        "per_class": {
+          "battery_power": {
+            "precision": 0.895,
+            "recall": 0.607,
+            "f1": 0.723,
+            "support": 28
+          },
+          "software_update_os": {
+            "precision": 0.62,
+            "recall": 0.886,
+            "f1": 0.729,
+            "support": 35
+          },
+          "connectivity_network": {
+            "precision": 0.917,
+            "recall": 0.88,
+            "f1": 0.898,
+            "support": 25
+          },
+          "hardware_display_audio": {
+            "precision": 0.857,
+            "recall": 0.96,
+            "f1": 0.906,
+            "support": 25
+          },
+          "apple_id_account_security": {
+            "precision": 1.0,
+            "recall": 0.96,
+            "f1": 0.98,
+            "support": 25
+          },
+          "billing_subscriptions_appstore": {
+            "precision": 0.923,
+            "recall": 0.96,
+            "f1": 0.941,
+            "support": 25
+          },
+          "general_inquiry_feedback": {
+            "precision": 1.0,
+            "recall": 0.784,
+            "f1": 0.879,
+            "support": 37
+          }
+        },
+        "confusion_matrix": [
+          [
+            17,
+            10,
+            0,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            31,
+            2,
+            2,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            22,
+            1,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            24,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            24,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            0,
+            0,
+            24,
+            0
+          ],
+          [
+            2,
+            6,
+            0,
+            0,
+            0,
+            0,
+            29
+          ]
+        ],
+        "labels": [
+          "battery_power",
+          "software_update_os",
+          "connectivity_network",
+          "hardware_display_audio",
+          "apple_id_account_security",
+          "billing_subscriptions_appstore",
+          "general_inquiry_feedback"
+        ]
+      },
+      "escalation": {
+        "accuracy": 0.8,
+        "precision": 0.9672,
+        "recall": 0.6082,
+        "f1": 0.7468,
+        "false_auto_handle_rate": 0.3918,
+        "false_escalation_rate": 0.0194,
+        "cost_weighted_penalty": 0.58,
+        "reason_accuracy": 0.79,
+        "confusion": {
+          "tp": 59,
+          "fp": 2,
+          "fn": 38,
+          "tn": 101
+        }
+      },
+      "generation": {
+        "mean_rouge_l": 0.715,
+        "mean_bleu_1": 0.724,
+        "mean_semantic_similarity": 0.7077,
+        "character_limit_compliance": 1.0
+      }
+    }
+  },
+  "judge_human_agreement": {
+    "cohens_kappa_quadratic": 0.1877,
+    "pearson_r": 0.4482,
+    "mean_absolute_error": 0.4362,
+    "sample_count": 50
+  }
+}
